@@ -1,0 +1,12 @@
+{
+  "name": "dntran-backend",
+  "version": "1.0.0",
+  "main": "Token.js",  // 👈 This points to your main file
+  "scripts": {
+    "start": "node Token.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "twilio": "^4.11.0"
+  }
+}
