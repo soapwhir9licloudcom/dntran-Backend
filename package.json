@@ -1,7 +1,7 @@
 {
-  "name": "dntran-backend",
+  "name": "dntran-Backend",
   "version": "1.0.0",
-  "main": "Token.js",  // 👈 This points to your main file
+  "main": "token.js",  // 👈 This points to your main file
   "scripts": {
     "start": "node Token.js"
   },
