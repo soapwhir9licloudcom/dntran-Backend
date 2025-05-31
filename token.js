@@ -20,7 +20,8 @@ const CALLER_ID = process.env.CALLER_ID || '+15132246101'; // <- This should be 
 
 // ====== /token endpoint ======
 app.get('/token', (req, res) => {
-  const identity = 'FleetFlowUser_' + Math.floor(Math.random() * 10000);
+  // FIXED identity to match the client dialed in /voice endpoint
+  const identity = 'FleetFlowUser_9351';
 
   const voiceGrant = new VoiceGrant({
     outgoingApplicationSid: twimlAppSid,
