@@ -10,8 +10,8 @@ const PORT = process.env.PORT || 3000;
 
 // Load credentials from environment variables
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const apiKeySid = process.env.TWILIO_API_KEY_SID;
-const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+const apiKeySid = process.env.TWILIO_API_KEY;
+const apiKeySecret = process.env.TWILIO_API_SECRET;
 const twimlAppSid = process.env.TWIML_APP_SID;
 
 
