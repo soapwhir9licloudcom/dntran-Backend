@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { AccessToken } = require('twilio').jwt;
-const VoiceResponse = require('twilio').twiml.VoiceResponse;
+const { VoiceResponse } = require('twilio').twiml;
 const VoiceGrant = AccessToken.VoiceGrant;
 
 const app = express();
@@ -20,7 +20,7 @@ const CALLER_ID = process.env.CALLER_ID || '+15132245530'; // Default to Number 
 
 // ====== /token endpoint ======
 app.get('/token', (req, res) => {
-  const identity = 'FleetFlowUser_9351'; // Must match <Client> name in TwiML
+  const identity = 'FleetFlowUser_9351'; // This must match <Client> name
 
   const voiceGrant = new VoiceGrant({
     outgoingApplicationSid: twimlAppSid,
@@ -28,7 +28,7 @@ app.get('/token', (req, res) => {
   });
 
   const token = new AccessToken(accountSid, apiKeySid, apiKeySecret, {
-    identity: identity,
+    identity,
     ttl: 3600,
   });
 
@@ -44,15 +44,13 @@ app.get('/token', (req, res) => {
 app.post('/voice', (req, res) => {
   const twiml = new VoiceResponse();
   const dial = twiml.dial({ callerId: CALLER_ID });
-
   const to = req.body.To;
 
   if (to) {
-    // If it's a phone number
     if (/^[\d\+\-\(\) ]+$/.test(to)) {
-      dial.number(to);
+      dial.number(to); // Dial phone number
     } else {
-      dial.client(to); // Otherwise assume it's a <Client>
+      dial.client(to); // Dial client name
     }
   } else {
     twiml.say("Thanks for calling FleetFlow. Please hold while we connect you.");
@@ -65,5 +63,5 @@ app.post('/voice', (req, res) => {
 
 // ====== Start Server ======
 app.listen(PORT, () => {
-  console.log(`FleetFlow Token & Voice server running on port ${PORT}`);
+  console.log(`✅ FleetFlow Token & Voice server running on port ${PORT}`);
 });
