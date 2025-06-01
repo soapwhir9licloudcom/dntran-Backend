@@ -45,6 +45,7 @@ app.post('/voice', (req, res) => {
   const twiml = new VoiceResponse();
   const dial = twiml.dial({ callerId: CALLER_ID });
   const to = req.body.To;
+  console.log('Received call to:', to);
 
   if (to) {
     if (/^[\d\+\-\(\) ]+$/.test(to)) {
