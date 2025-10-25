@@ -4,7 +4,7 @@
 // ============================================================
 
 const express = require('express');
-const https = require('https');                     // <-- for SDK proxy route
+const https = require('https');
 const { AccessToken } = require('twilio').jwt;
 const { VoiceResponse } = require('twilio').twiml;
 const VoiceGrant = AccessToken.VoiceGrant;
@@ -15,7 +15,7 @@ app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
 
-// ====== HARD-CODED CORS ======
+// ====== CORS (allow your dialer domain) ======
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   const allowed = new Set([
@@ -57,36 +57,39 @@ app.get('/', (_req, res) => {
   `);
 });
 
-// ====== Serve a supported Twilio Client SDK (v1.18) via backend proxy ======
-app.get('/twilio-sdk.js', (_req, res) => {
-  const url = 'https://media.twiliocdn.com/sdk/js/client/v1.18/twilio.min.js';
-  https.get(url, r => {
+// ====== Twilio Client SDK proxy (follows redirects) ======
+const URL_TO_FETCH = 'https://media.twiliocdn.com/sdk/js/client/v1.18/twilio.min.js';
+function proxyGet(url, res, hop = 0) {
+  if (hop > 5) return res.status(508).send('SDK fetch redirect loop');
+  https.get(url, { headers: { 'User-Agent': 'dntran-backend/1.0' } }, r => {
+    if ([301,302,307,308].includes(r.statusCode) && r.headers.location) {
+      const next = r.headers.location.startsWith('http')
+        ? r.headers.location
+        : new URL(r.headers.location, url).toString();
+      return proxyGet(next, res, hop + 1);
+    }
     if (r.statusCode !== 200) {
-      res.status(r.statusCode || 502).send('SDK fetch failed');
-      return;
+      return res.status(r.statusCode || 502).send(`SDK fetch failed (HTTP ${r.statusCode})`);
     }
     res.setHeader('Content-Type', 'application/javascript');
     r.pipe(res);
-  }).on('error', () => res.status(502).send('SDK fetch error'));
-});
+  }).on('error', e => res.status(502).send('SDK fetch error: ' + e.message));
+}
+app.get('/twilio-sdk.js', (req, res) => proxyGet(URL_TO_FETCH, res));
 
-// ====== /token — returns Access Token WITH VoiceGrant ======
+// ====== /token — Access Token with VoiceGrant ======
 app.get('/token', (_req, res) => {
   try {
     const identity = 'FleetFlowUser_9351';
-
     const voiceGrant = new VoiceGrant({
       outgoingApplicationSid: twimlAppSid, // AP...
       incomingAllow: true,
     });
-
     const token = new AccessToken(accountSid, apiKeySid, apiKeySecret, {
       identity,
       ttl: 3600,
     });
-
     token.addGrant(voiceGrant);
-
     res.json({ identity, token: token.toJwt() });
   } catch (err) {
     console.error('❌ Token generation failed:', err);
@@ -99,13 +102,12 @@ app.post('/voice', (req, res) => {
   const twiml = new VoiceResponse();
   const dial = twiml.dial({ callerId: CALLER_ID });
   const to = req.body && req.body.To ? String(req.body.To).trim() : '';
-  console.log('Received call to:', to);
 
   if (to) {
     if (/^[\d+\-() ]+$/.test(to)) {
-      dial.number(to);  // PSTN
+      dial.number(to);  // real phone number
     } else {
-      dial.client(to);  // Client identity
+      dial.client(to);  // Twilio Client identity
     }
   } else {
     twiml.say('Thanks for calling FleetFlow. Please hold while we connect you.');
